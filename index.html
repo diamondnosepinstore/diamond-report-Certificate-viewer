@@ -1,0 +1,169 @@
+ <!DOCTYPE html>
+ <html lang="en">
+ <head>
+ <meta charset="UTF-8" />
+ <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+ <title>Diamond Report Viewer</title>
+ <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+ <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+ <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+ <style>
+ body {
+ font-family: Arial, sans-serif;
+ background: #f0f2f5;
+ padding: 20px;
+ text-align: center;
+ }
+ input, button {
+ padding: 10px;
+ font-size: 16px;
+ margin: 5px;
+ }
+ input {
+ width: 250px;
+ }
+ .report-card {
+ border: 1px solid #ccc;
+ border-radius: 10px;
+ padding: 20px;
+ margin: 20px auto;
+ max-width: 600px;
+ background: #fff;
+ box-shadow: 0 0 10px rgba(0,0,0,0.1);
+ }
+ .report-card img {
+ display: block;
+ margin: 10px auto;
+ width: 90%;
+ }
+ }
+ canvas {
+ margin-top: 10px;
+ }
+ #reader {
+ width: 300px;
+ margin: 20px auto;
+ display: none;
+ }
+ .search-button {
+ background-color: #007BFF;
+ color: white;
+ border: none;
+ }
+ </style>
+ </head>
+ <body>
+ <h1>Diamond Report Viewer</h1>
+ 
+ <input type="text" id="reportInput" placeholder="Enter Report Number (e.g., RPT001)" />
+ <button class="search-button" onclick="searchReport()">Search</button>
+ <button onclick="startScanner()">📷 Scan QR</button>
+ 
+ <div id="reader"></div>
+ <div id="result"></div>
+ 
+ <script>
+ const reports = {
+ "GIA232516": { img1: "diamondreport/diamond01a.jpg",  img2: "diamondreport/diamond01b.jpg" },
+ "GIA232539": { img1: "diamondreport/diamond02a.jpg", img2: "diamondreport/diamond02b.jpg", weight: "2.1g", carat: "0.9ct" },
+ "GIA232552": { img1: "diamondreport/diamond03a.jpg", img2: "diamondreport/diamond03b.jpg", weight: "2.0g", carat: "1.2ct" },
+ "GIA232537": { img1: "diamondreport/diamond04a.jpg", img2: "diamondreport/diamond04b.jpg", weight: "2.5g", carat: "1.0ct" },
+ "GIA232545": { img1: "diamondreport/diamond05a.jpg", img2: "diamondreport/diamond05b.jpg", weight: "2.4g", carat: "1.3ct" },
+ "GIA232549": { img1: "diamondreport/diamond06a.jpg", img2: "diamondreport/diamond06b.jpg", weight: "2.6g", carat: "1.5ct" },
+ "GIA232591": { img1: "diamondreport/diamond07a.jpg", img2: "diamondreport/diamond07b.jpg", weight: "2.2g", carat: "1.1ct" },
+ "GIA232592": { img1: "diamondreport/diamond08a.jpg", img2: "diamondreport/diamond08b.jpg", weight: "2.0g", carat: "1.0ct" },
+ "GIA232595": { img1: "diamondreport/diamond09a.jpg", img2: "diamondreport/diamond09b.jpg", weight: "2.7g", carat: "1.4ct" },
+ "GIA232563": { img1: "diamondreport/diamond10a.jpg", img2: "diamondreport/diamond10b.jpg", weight: "2.9g", carat: "1.6ct" },
+ "GIA232569": { img1: "diamondreport/diamond11a.jpg", img2: "diamondreport/diamond11b.jpg", weight: "2.3g", carat: "1.3ct" },
+ "GIA232567": { img1: "diamondreport/diamond12a.jpg", img2: "diamondreport/diamond12b.jpg", weight: "2.1g", carat: "1.2ct" },
+ "GIA232559": { img1: "diamondreport/diamond13a.jpg", img2: "diamondreport/diamond13b.jpg", weight: "2.5g", carat: "1.1ct" },
+ "GIA232558": { img1: "diamondreport/diamond14a.jpg", img2: "diamondreport/diamond14b.jpg", weight: "2.0g", carat: "1.0ct" },
+ "GIA232531": { img1: "diamondreport/diamond15a.jpg", img2: "diamondreport/diamond15b.jpg", weight: "2.4g", carat: "1.3ct" },
+ "GIA232537": { img1: "diamondreport/diamond16a.jpg", img2: "diamondreport/diamond16b.jpg", weight: "2.8g", carat: "1.5ct" },
+ "GIA232532": { img1: "diamondreport/diamond17a.jpg", img2: "diamondreport/diamond17b.jpg", weight: "2.2g", carat: "1.1ct" },
+ "GIA232536": { img1: "diamondreport/diamond18a.jpg", img2: "diamondreport/diamond18b.jpg", weight: "2.6g", carat: "1.2ct" },
+ "GIA232533": { img1: "diamondreport/diamond19a.jpg", img2: "diamondreport/diamond19b.jpg", weight: "2.1g", carat: "0.9ct" },
+ "GIA232534": { img1: "diamondreport/diamond20a.jpg", img2: "diamondreport/diamond20b.jpg", weight: "2.7g", carat: "1.4ct" },
+ "GIA232521": { img1: "diamondreport/diamond21a.jpg", img2: "diamondreport/diamond21b.jpg", weight: "2.5g", carat: "1.2ct" },
+ "GIA232523": { img1: "diamondreport/diamond22a.jpg", img2: "diamondreport/diamond22b.jpg", weight: "2.9g", carat: "1.6ct" },
+ "GIA232526": { img1: "diamondreport/diamond23a.jpg", img2: "diamondreport/diamond23b.jpg", weight: "2.4g", carat: "1.3ct" },
+ "GIA232551": { img1: "diamondreport/diamond24a.jpg", img2: "diamondreport/diamond24b.jpg", weight: "2.3g", carat: "1.1ct" },
+ "GIA232524": { img1: "diamondreport/diamond25a.jpg", img2: "diamondreport/diamond25b.jpg", weight: "2.0g", carat: "1.0ct" },
+ "GIA232528": { img1: "diamondreport/diamond26a.jpg", img2: "diamondreport/diamond26b.jpg", weight: "2.2g", carat: "1.2ct" },
+ "GIA232529": { img1: "diamondreport/diamond27a.jpg", img2: "diamondreport/diamond27b.jpg", weight: "2.5g", carat: "1.4ct" },
+ "RPT028": { img1: "diamondreport/diamond28a.jpg", img2: "diamondreport/diamond28b.jpg", weight: "2.8g", carat: "1.5ct" },
+ };
+ 
+ function searchReport() {
+ const code = document.getElementById("reportInput").value.trim().toUpperCase();
+ const report = reports[code];
+ const result = document.getElementById("result");
+ result.innerHTML = "";
+ 
+ if (report) {
+ const div = document.createElement("div");
+ div.className = "report-card";
+ div.id = `card-${code}`;
+ div.innerHTML = `
+ <h2>Certified By IGDTL</h2>
+ <p></p>
+ <p></p>
+ <img src="${report.img1}" alt="Image 1" />
+ <img src="${report.img2}" alt="Image 2" />
+ <canvas id="qrcode-${code}"></canvas><br>
+ <button onclick="printReport('${code}')">🖨️ Print</button>
+ <button onclick="downloadReport('${code}')">⬇️ Download</button>
+ `;
+ result.appendChild(div);
+ QRCode.toCanvas(document.getElementById(`qrcode-${code}`), code);
+ } else {
+ result.innerHTML = `<p style='color:red;'>Report not found.</p>`;
+ }
+ }
+ 
+ function startScanner() {
+ const readerDiv = document.getElementById("reader");
+ readerDiv.style.display = "block";
+ const html5QrCode = new Html5Qrcode("reader");
+ 
+ html5QrCode.start(
+ { facingMode: "environment" },
+ { fps: 10, qrbox: 250 },
+ qrCodeMessage => {
+ html5QrCode.stop();
+ readerDiv.style.display = "none";
+ document.getElementById("reportInput").value = qrCodeMessage;
+ searchReport();
+ },
+ errorMessage => {}
+ ).catch(err => {
+ alert("Camera access failed.");
+ });
+ }
+ 
+ function printReport(reportNumber) {
+ const content = document.getElementById(`card-${reportNumber}`).innerHTML;
+ const win = window.open('', '', 'width=800,height=600');
+ win.document.write(`<html><head><title>${reportNumber}</title>`);
+ win.document.write('<style>body{font-family:Arial;text-align:center;} img{width:45%;margin:5px;} canvas{margin-top:10px;}</style>');
+ win.document.write('</head><body>');
+ win.document.write(content);
+ win.document.write('</body></html>');
+ win.document.close();
+ win.focus();
+ win.print();
+ win.close();
+ }
+ 
+ function downloadReport(reportNumber) {
+ const card = document.getElementById(`card-${reportNumber}`);
+ html2canvas(card).then(canvas => {
+ const link = document.createElement("a");
+ link.download = `${reportNumber}.png`;
+ link.href = canvas.toDataURL("image/png");
+ link.click();
+ });
+ }
+ </script>
+ </body>
+ </html>
